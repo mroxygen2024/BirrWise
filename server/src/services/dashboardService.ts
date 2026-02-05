@@ -1,0 +1,145 @@
+import { Types } from "mongoose";
+import { TransactionModel } from "../models/Transaction";
+import { BudgetModel } from "../models/Budget";
+
+const CATEGORY_COLORS: Record<string, string> = {
+  "Food & Dining": "hsl(var(--chart-1))",
+  "Transportation": "hsl(var(--chart-2))",
+  "Entertainment": "hsl(var(--chart-3))",
+  "Shopping": "hsl(var(--chart-4))",
+  "Bills & Utilities": "hsl(var(--chart-5))",
+  "Healthcare": "hsl(var(--chart-1))",
+  "Education": "hsl(var(--chart-2))",
+  "Travel": "hsl(var(--chart-3))",
+  "Other": "hsl(var(--chart-4))",
+};
+
+function startOfMonth(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+}
+
+function endOfMonth(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+}
+
+function monthLabel(date: Date) {
+  return date.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+}
+
+export const dashboardService = {
+  async summary(userId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+
+    const [incomeAgg, expenseAgg, budgets] = await Promise.all([
+      TransactionModel.aggregate([
+        { $match: { userId: userObjectId, type: "income" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      TransactionModel.aggregate([
+        { $match: { userId: userObjectId, type: "expense" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      BudgetModel.find({ userId: userObjectId }).lean(),
+    ]);
+
+    const totalIncome = incomeAgg[0]?.total || 0;
+    const totalExpenses = expenseAgg[0]?.total || 0;
+    const netSavings = totalIncome - totalExpenses;
+
+    const totalBudget = budgets.reduce((sum, b) => sum + (b.limit || 0), 0);
+    const budgetUsedPercent = totalBudget > 0 ? (totalExpenses / totalBudget) * 100 : 0;
+
+    return {
+      totalIncome,
+      totalExpenses,
+      netSavings,
+      budgetUsedPercent: Math.round(budgetUsedPercent),
+    };
+  },
+
+  async categoryExpenses(userId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+
+    const agg = await TransactionModel.aggregate([
+      { $match: { userId: userObjectId, type: "expense" } },
+      { $group: { _id: "$category", amount: { $sum: "$amount" } } },
+      { $sort: { amount: -1 } },
+    ]);
+
+    return agg.map((item) => ({
+      category: item._id,
+      amount: item.amount,
+      color: CATEGORY_COLORS[item._id] || "hsl(var(--chart-1))",
+    }));
+  },
+
+  async monthly(userId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+    const now = new Date();
+    const months: Date[] = [];
+
+    for (let i = 3; i >= 0; i -= 1) {
+      const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+      months.push(date);
+    }
+
+    const results = await Promise.all(
+      months.map(async (date) => {
+        const start = startOfMonth(date);
+        const end = endOfMonth(date);
+
+        const [incomeAgg, expenseAgg] = await Promise.all([
+          TransactionModel.aggregate([
+            { $match: { userId: userObjectId, type: "income", date: { $gte: start, $lt: end } } },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ]),
+          TransactionModel.aggregate([
+            { $match: { userId: userObjectId, type: "expense", date: { $gte: start, $lt: end } } },
+            { $group: { _id: null, total: { $sum: "$amount" } } },
+          ]),
+        ]);
+
+        return {
+          month: monthLabel(date),
+          income: incomeAgg[0]?.total || 0,
+          expenses: expenseAgg[0]?.total || 0,
+        };
+      }),
+    );
+
+    return results;
+  },
+
+  async dailyExpenses(userId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+    const now = new Date();
+    const start = startOfMonth(now);
+    const end = endOfMonth(now);
+
+    const agg = await TransactionModel.aggregate([
+      { $match: { userId: userObjectId, type: "expense", date: { $gte: start, $lt: end } } },
+      {
+        $group: {
+          _id: { day: { $dayOfMonth: "$date" } },
+          amount: { $sum: "$amount" },
+        },
+      },
+    ]);
+
+    const daysInMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
+    const expenseByDay = new Map(agg.map((a) => [a._id.day, a.amount]));
+
+    const results = [] as { date: string; amount: number }[];
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const labelDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day));
+      const label = labelDate.toLocaleString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+      results.push({
+        date: label,
+        amount: expenseByDay.get(day) || 0,
+      });
+    }
+
+    return results;
+  },
+};
