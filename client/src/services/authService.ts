@@ -1,53 +1,34 @@
 import { User } from '@/types';
 import { LoginFormData, RegisterFormData } from '@/schemas';
-import { delay, generateId } from '@/utils/formatters';
+import { apiClient } from '@/services/apiClient';
 
-// Mock user storage
-const mockUsers: Map<string, { user: User; password: string }> = new Map();
+type AuthResponse = {
+  user: User;
+  accessToken: string;
+};
 
-// Pre-populate with a demo user
-mockUsers.set('demo@example.com', {
-  user: {
-    id: 'demo-user',
-    email: 'demo@example.com',
-    name: 'Demo User',
-    createdAt: new Date(),
-  },
-  password: 'demo123',
-});
+function normalizeAuthResponse(response: AuthResponse): AuthResponse {
+  return {
+    ...response,
+    user: {
+      ...response.user,
+      createdAt: new Date(response.user.createdAt),
+    },
+  };
+}
 
 export const authService = {
-  async login(data: LoginFormData): Promise<User> {
-    await delay(500);
-    
-    const stored = mockUsers.get(data.email);
-    if (!stored || stored.password !== data.password) {
-      throw new Error('Invalid email or password');
-    }
-    
-    return stored.user;
+  async login(data: LoginFormData): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>('/auth/login', data, false);
+    return normalizeAuthResponse(response);
   },
 
-  async register(data: RegisterFormData): Promise<User> {
-    await delay(500);
-    
-    if (mockUsers.has(data.email)) {
-      throw new Error('Email already registered');
-    }
-    
-    const user: User = {
-      id: generateId(),
-      email: data.email,
-      name: data.name,
-      createdAt: new Date(),
-    };
-    
-    mockUsers.set(data.email, { user, password: data.password });
-    return user;
+  async register(data: RegisterFormData): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>('/auth/register', data, false);
+    return normalizeAuthResponse(response);
   },
 
   async logout(): Promise<void> {
-    await delay(300);
-    // In real implementation, invalidate session
+    await apiClient.post('/auth/logout', undefined, true);
   },
 };

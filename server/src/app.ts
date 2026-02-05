@@ -1,4 +1,6 @@
 import express from "express";
+import helmet from "helmet";
+import cors from "cors";
 import authRoutes from "./routes/authRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import budgetRoutes from "./routes/budgetRoutes";
@@ -7,9 +9,17 @@ import aiRoutes from "./routes/aiRoutes";
 import { requireAuth } from "./middleware/auth";
 import { notFound } from "./middleware/notFound";
 import { errorHandler } from "./middleware/errorHandler";
+import { corsOrigins } from "./config/env";
 
 export const app = express();
 
+app.use(helmet());
+app.use(
+	cors({
+		origin: corsOrigins,
+		credentials: true,
+	}),
+);
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);

@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { BudgetCard } from '@/components/charts/BudgetCard';
-import { BudgetEditDialog } from '@/components/forms/BudgetEditDialog';
-import { budgetService } from '@/services/budgetService';
-import { Budget } from '@/types';
-import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { BudgetCard } from "@/components/charts/BudgetCard";
+import { BudgetEditDialog } from "@/components/forms/BudgetEditDialog";
+import { budgetService } from "@/services/budgetService";
+import { Budget } from "@/types";
+import { Loader2 } from "lucide-react";
 
 export default function Budgets() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -14,7 +14,8 @@ export default function Budgets() {
   useEffect(() => {
     const fetchBudgets = async () => {
       setIsLoading(true);
-      const data = await budgetService.getMonthlyBudgets('2026-02');
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const data = await budgetService.getMonthlyBudgets(currentMonth);
       setBudgets(data);
       setIsLoading(false);
     };
@@ -28,7 +29,7 @@ export default function Budgets() {
 
   const handleSave = async (id: string, limit: number) => {
     const updated = await budgetService.updateBudget(id, limit);
-    setBudgets(budgets.map(b => b.id === id ? updated : b));
+    setBudgets(budgets.map((b) => (b.id === id ? updated : b)));
     setEditingBudget(null);
   };
 
@@ -37,7 +38,9 @@ export default function Budgets() {
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold">Budgets</h2>
-          <p className="text-muted-foreground">Track your monthly spending limits by category</p>
+          <p className="text-muted-foreground">
+            Track your monthly spending limits by category
+          </p>
         </div>
 
         {isLoading ? (
@@ -47,11 +50,7 @@ export default function Budgets() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {budgets.map((budget) => (
-              <BudgetCard
-                key={budget.id}
-                budget={budget}
-                onEdit={handleEdit}
-              />
+              <BudgetCard key={budget.id} budget={budget} onEdit={handleEdit} />
             ))}
           </div>
         )}

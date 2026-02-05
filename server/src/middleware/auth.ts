@@ -16,7 +16,10 @@ export function requireAuth(req: AuthRequest, _res: Response, next: NextFunction
   const token = header.replace("Bearer ", "").trim();
 
   try {
-    const payload = jwt.verify(token, env.jwtSecret) as { userId: string };
+    const payload = jwt.verify(token, env.jwtSecret, {
+      issuer: env.jwtIssuer,
+      audience: env.jwtAudience,
+    }) as { userId: string };
     req.userId = payload.userId;
     return next();
   } catch {

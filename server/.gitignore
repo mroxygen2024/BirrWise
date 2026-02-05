@@ -11,7 +11,7 @@ lerna-debug.log*
 .env
 >>>>>>> 018500f (feat: some backend features added)
 
-node_modules
+node_modules/
 dist
 dist-ssr
 *.local

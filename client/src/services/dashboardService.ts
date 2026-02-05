@@ -1,31 +1,28 @@
 import { DashboardSummary, CategoryExpense, MonthlyData, DailyExpense } from '@/types';
-import { mockCategoryExpenses, mockMonthlyData, mockDailyExpenses } from './mockData';
-import { delay } from '@/utils/formatters';
+import { apiClient } from '@/services/apiClient';
+
+function getMonthParam(month?: string) {
+  return month || new Date().toISOString().slice(0, 7);
+}
 
 export const dashboardService = {
-  async getSummary(): Promise<DashboardSummary> {
-    await delay(300);
-    
-    return {
-      totalIncome: 5800,
-      totalExpenses: 535,
-      netSavings: 5265,
-      budgetUsedPercent: 34,
-    };
+  async getSummary(month?: string): Promise<DashboardSummary> {
+    const targetMonth = getMonthParam(month);
+    return apiClient.get<DashboardSummary>(`/dashboard/summary?month=${targetMonth}`, true);
   },
 
-  async getCategoryExpenses(): Promise<CategoryExpense[]> {
-    await delay(300);
-    return mockCategoryExpenses;
+  async getCategoryExpenses(month?: string): Promise<CategoryExpense[]> {
+    const targetMonth = getMonthParam(month);
+    return apiClient.get<CategoryExpense[]>(`/dashboard/category-expenses?month=${targetMonth}`, true);
   },
 
-  async getMonthlyData(): Promise<MonthlyData[]> {
-    await delay(300);
-    return mockMonthlyData;
+  async getMonthlyData(month?: string): Promise<MonthlyData[]> {
+    const targetMonth = getMonthParam(month);
+    return apiClient.get<MonthlyData[]>(`/dashboard/monthly?month=${targetMonth}`, true);
   },
 
-  async getDailyExpenses(): Promise<DailyExpense[]> {
-    await delay(300);
-    return mockDailyExpenses;
+  async getDailyExpenses(month?: string): Promise<DailyExpense[]> {
+    const targetMonth = getMonthParam(month);
+    return apiClient.get<DailyExpense[]>(`/dashboard/daily-expenses?month=${targetMonth}`, true);
   },
 };

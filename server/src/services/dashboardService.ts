@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 import { TransactionModel } from "../models/Transaction";
 import { BudgetModel } from "../models/Budget";
+import { ApiError } from "../utils/apiError";
 
 const CATEGORY_COLORS: Record<string, string> = {
   "Food & Dining": "hsl(var(--chart-1))",
@@ -26,20 +27,41 @@ function monthLabel(date: Date) {
   return date.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
 }
 
+function parseMonthOrThrow(month?: string) {
+  if (!month) {
+    return new Date();
+  }
+
+  const match = /^\d{4}-\d{2}$/.exec(month);
+  if (!match) {
+    throw new ApiError(400, "Invalid month format. Expected YYYY-MM");
+  }
+
+  const [year, monthStr] = month.split("-").map(Number);
+  if (Number.isNaN(year) || Number.isNaN(monthStr) || monthStr < 1 || monthStr > 12) {
+    throw new ApiError(400, "Invalid month format. Expected YYYY-MM");
+  }
+
+  return new Date(Date.UTC(year, monthStr - 1, 1));
+}
+
 export const dashboardService = {
-  async summary(userId: string) {
+  async summary(userId: string, month?: string) {
     const userObjectId = new Types.ObjectId(userId);
+    const targetMonth = parseMonthOrThrow(month);
+    const start = startOfMonth(targetMonth);
+    const end = endOfMonth(targetMonth);
 
     const [incomeAgg, expenseAgg, budgets] = await Promise.all([
       TransactionModel.aggregate([
-        { $match: { userId: userObjectId, type: "income" } },
+        { $match: { userId: userObjectId, type: "income", date: { $gte: start, $lt: end } } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       TransactionModel.aggregate([
-        { $match: { userId: userObjectId, type: "expense" } },
+        { $match: { userId: userObjectId, type: "expense", date: { $gte: start, $lt: end } } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
-      BudgetModel.find({ userId: userObjectId }).lean(),
+      BudgetModel.find({ userId: userObjectId, month: month || start.toISOString().slice(0, 7) }).lean(),
     ]);
 
     const totalIncome = incomeAgg[0]?.total || 0;
@@ -57,11 +79,14 @@ export const dashboardService = {
     };
   },
 
-  async categoryExpenses(userId: string) {
+  async categoryExpenses(userId: string, month?: string) {
     const userObjectId = new Types.ObjectId(userId);
+    const targetMonth = parseMonthOrThrow(month);
+    const start = startOfMonth(targetMonth);
+    const end = endOfMonth(targetMonth);
 
     const agg = await TransactionModel.aggregate([
-      { $match: { userId: userObjectId, type: "expense" } },
+      { $match: { userId: userObjectId, type: "expense", date: { $gte: start, $lt: end } } },
       { $group: { _id: "$category", amount: { $sum: "$amount" } } },
       { $sort: { amount: -1 } },
     ]);
@@ -73,9 +98,9 @@ export const dashboardService = {
     }));
   },
 
-  async monthly(userId: string) {
+  async monthly(userId: string, month?: string) {
     const userObjectId = new Types.ObjectId(userId);
-    const now = new Date();
+    const now = parseMonthOrThrow(month);
     const months: Date[] = [];
 
     for (let i = 3; i >= 0; i -= 1) {
@@ -110,9 +135,9 @@ export const dashboardService = {
     return results;
   },
 
-  async dailyExpenses(userId: string) {
+  async dailyExpenses(userId: string, month?: string) {
     const userObjectId = new Types.ObjectId(userId);
-    const now = new Date();
+    const now = parseMonthOrThrow(month);
     const start = startOfMonth(now);
     const end = endOfMonth(now);
 

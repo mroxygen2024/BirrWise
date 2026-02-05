@@ -18,7 +18,11 @@ export const authService = {
       passwordHash,
     });
 
-    const token = jwt.sign({ userId: user.id }, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
+    const token = jwt.sign({ userId: user.id }, env.jwtSecret, {
+      expiresIn: env.jwtExpiresIn,
+      issuer: env.jwtIssuer,
+      audience: env.jwtAudience,
+    });
 
     return { user: user.toJSON(), accessToken: token };
   },
@@ -34,7 +38,11 @@ export const authService = {
       throw new ApiError(401, "Invalid email or password");
     }
 
-    const token = jwt.sign({ userId: user.id }, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
+    const token = jwt.sign({ userId: user.id }, env.jwtSecret, {
+      expiresIn: env.jwtExpiresIn,
+      issuer: env.jwtIssuer,
+      audience: env.jwtAudience,
+    });
 
     return { user: user.toJSON(), accessToken: token };
   },

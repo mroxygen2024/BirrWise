@@ -1,51 +1,32 @@
 import { Transaction } from '@/types';
 import { TransactionFormData } from '@/schemas';
-import { mockTransactions } from './mockData';
-import { delay, generateId } from '@/utils/formatters';
+import { apiClient } from '@/services/apiClient';
 
-// In-memory store for mock data
-let transactions = [...mockTransactions];
+function normalizeTransaction(transaction: Transaction) {
+  return {
+    ...transaction,
+    date: new Date(transaction.date),
+    createdAt: new Date(transaction.createdAt),
+  } as Transaction;
+}
 
 export const transactionService = {
   async getAll(): Promise<Transaction[]> {
-    await delay(300);
-    return [...transactions].sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    const data = await apiClient.get<Transaction[]>('/transactions', true);
+    return data.map(normalizeTransaction).sort((a, b) => b.date.getTime() - a.date.getTime());
   },
 
   async create(data: TransactionFormData): Promise<Transaction> {
-    await delay(300);
-    
-    const transaction: Transaction = {
-      id: generateId(),
-      ...data,
-      createdAt: new Date(),
-    };
-    
-    transactions.push(transaction);
-    return transaction;
+    const transaction = await apiClient.post<Transaction>('/transactions', data, true);
+    return normalizeTransaction(transaction);
   },
 
   async update(id: string, data: TransactionFormData): Promise<Transaction> {
-    await delay(300);
-    
-    const index = transactions.findIndex(t => t.id === id);
-    if (index === -1) {
-      throw new Error('Transaction not found');
-    }
-    
-    const updated: Transaction = {
-      ...transactions[index],
-      ...data,
-    };
-    
-    transactions[index] = updated;
-    return updated;
+    const updated = await apiClient.put<Transaction>(`/transactions/${id}`, data, true);
+    return normalizeTransaction(updated);
   },
 
   async delete(id: string): Promise<void> {
-    await delay(300);
-    transactions = transactions.filter(t => t.id !== id);
+    await apiClient.delete(`/transactions/${id}`, true);
   },
 };
