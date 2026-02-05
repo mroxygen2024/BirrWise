@@ -6,12 +6,19 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+<<<<<<< HEAD
+=======
+.env
+>>>>>>> 018500f (feat: some backend features added)
 
 node_modules
 dist
 dist-ssr
 *.local
+<<<<<<< HEAD
 .env
+=======
+>>>>>>> 018500f (feat: some backend features added)
 
 # Editor directories and files
 .vscode/*
