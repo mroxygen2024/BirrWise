@@ -29,6 +29,11 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    await apiClient.post('/auth/logout', undefined, true);
+    await apiClient.post('/auth/logout', undefined, false);
+  },
+
+  async refresh(): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>('/auth/refresh', undefined, false);
+    return normalizeAuthResponse(response);
   },
 };

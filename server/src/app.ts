@@ -10,8 +10,11 @@ import { requireAuth } from "./middleware/auth";
 import { notFound } from "./middleware/notFound";
 import { errorHandler } from "./middleware/errorHandler";
 import { corsOrigins } from "./config/env";
+import morgan from "morgan";
 
 export const app = express();
+
+app.set("trust proxy", 1);
 
 app.use(helmet());
 app.use(
@@ -21,6 +24,7 @@ app.use(
 	}),
 );
 app.use(express.json());
+app.use(morgan("dev"));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/transactions", requireAuth, transactionRoutes);

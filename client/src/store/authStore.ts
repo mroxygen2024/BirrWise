@@ -1,73 +1,93 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { User } from '@/types';
 import { authService } from '@/services/authService';
 import { LoginFormData, RegisterFormData } from '@/schemas';
+import { onAuthInvalid } from '@/utils/authEvents';
+
+let authInvalidListenerAttached = false;
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  isAuthReady: boolean;
   isLoading: boolean;
   error: string | null;
   accessToken: string | null;
   login: (data: LoginFormData) => Promise<void>;
   register: (data: RegisterFormData) => Promise<void>;
+  refresh: () => Promise<void>;
+  initialize: () => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
-      accessToken: null,
+export const useAuthStore = create<AuthState>()((set, get) => {
+  if (!authInvalidListenerAttached && typeof window !== 'undefined') {
+    authInvalidListenerAttached = true;
+    onAuthInvalid(() => {
+      set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false, isAuthReady: true });
+    });
+  }
 
-      login: async (data) => {
-        set({ isLoading: true, error: null });
-        try {
-          const result = await authService.login(data);
-          set({ user: result.user, accessToken: result.accessToken, isAuthenticated: true, isLoading: false });
-        } catch (err) {
-          set({ 
-            error: err instanceof Error ? err.message : 'Login failed',
-            isLoading: false 
-          });
-          throw err;
-        }
-      },
+  return {
+    user: null,
+    isAuthenticated: false,
+    isAuthReady: false,
+    isLoading: false,
+    error: null,
+    accessToken: null,
 
-      register: async (data) => {
-        set({ isLoading: true, error: null });
-        try {
-          const result = await authService.register(data);
-          set({ user: result.user, accessToken: result.accessToken, isAuthenticated: true, isLoading: false });
-        } catch (err) {
-          set({ 
-            error: err instanceof Error ? err.message : 'Registration failed',
-            isLoading: false 
-          });
-          throw err;
-        }
-      },
+    login: async (data) => {
+      set({ isLoading: true, error: null });
+      try {
+        const result = await authService.login(data);
+        set({ user: result.user, accessToken: result.accessToken, isAuthenticated: true, isLoading: false, isAuthReady: true });
+      } catch (err) {
+        set({
+          error: err instanceof Error ? err.message : 'Login failed',
+          isLoading: false,
+          isAuthReady: true,
+        });
+        throw err;
+      }
+    },
 
-      logout: async () => {
-        set({ isLoading: true });
-        await authService.logout();
+    register: async (data) => {
+      set({ isLoading: true, error: null });
+      try {
+        const result = await authService.register(data);
+        set({ user: result.user, accessToken: result.accessToken, isAuthenticated: true, isLoading: false, isAuthReady: true });
+      } catch (err) {
+        set({
+          error: err instanceof Error ? err.message : 'Registration failed',
+          isLoading: false,
+          isAuthReady: true,
+        });
+        throw err;
+      }
+    },
+
+    refresh: async () => {
+      set({ isLoading: true });
+      try {
+        const result = await authService.refresh();
+        set({ user: result.user, accessToken: result.accessToken, isAuthenticated: true, isLoading: false });
+      } catch {
         set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
-      },
+      }
+    },
 
-      clearError: () => set({ error: null }),
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({ 
-        user: state.user, 
-        isAuthenticated: state.isAuthenticated,
-        accessToken: state.accessToken,
-      }),
-    }
-  )
-);
+    initialize: async () => {
+      await get().refresh();
+      set({ isAuthReady: true });
+    },
+
+    logout: async () => {
+      set({ isLoading: true });
+      await authService.logout();
+      set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false, isAuthReady: true });
+    },
+
+    clearError: () => set({ error: null }),
+  };
+});

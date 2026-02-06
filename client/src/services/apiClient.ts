@@ -1,3 +1,6 @@
+import { emitAuthInvalid } from '@/utils/authEvents';
+import { useAuthStore } from '@/store/authStore';
+
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 type RequestOptions = {
@@ -9,25 +12,13 @@ type RequestOptions = {
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
 
-function getStoredToken() {
-  const raw = localStorage.getItem('auth-storage');
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as { state?: { accessToken?: string } };
-    return parsed.state?.accessToken || null;
-  } catch {
-    return null;
-  }
-}
-
 async function request<T>({ method, path, body, auth = true }: RequestOptions): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
 
   if (auth) {
-    const token = getStoredToken();
+    const token = useAuthStore.getState().accessToken;
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
@@ -36,10 +27,14 @@ async function request<T>({ method, path, body, auth = true }: RequestOptions): 
   const response = await fetch(`${baseUrl}${path}`, {
     method,
     headers,
+    credentials: 'include',
     body: body ? JSON.stringify(body) : undefined,
   });
 
   if (!response.ok) {
+    if (response.status === 401 && auth) {
+      emitAuthInvalid();
+    }
     const errorBody = await response.json().catch(() => ({ message: 'Request failed' }));
     const message = errorBody?.message || 'Request failed';
     throw new Error(message);
