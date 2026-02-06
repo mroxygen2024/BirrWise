@@ -51,14 +51,25 @@ export const dashboardService = {
     const targetMonth = parseMonthOrThrow(month);
     const start = startOfMonth(targetMonth);
     const end = endOfMonth(targetMonth);
+    const prevMonth = new Date(Date.UTC(targetMonth.getUTCFullYear(), targetMonth.getUTCMonth() - 1, 1));
+    const prevStart = startOfMonth(prevMonth);
+    const prevEnd = endOfMonth(prevMonth);
 
-    const [incomeAgg, expenseAgg, budgets] = await Promise.all([
+    const [incomeAgg, expenseAgg, prevIncomeAgg, prevExpenseAgg, budgets] = await Promise.all([
       TransactionModel.aggregate([
         { $match: { userId: userObjectId, type: "income", date: { $gte: start, $lt: end } } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       TransactionModel.aggregate([
         { $match: { userId: userObjectId, type: "expense", date: { $gte: start, $lt: end } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      TransactionModel.aggregate([
+        { $match: { userId: userObjectId, type: "income", date: { $gte: prevStart, $lt: prevEnd } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      TransactionModel.aggregate([
+        { $match: { userId: userObjectId, type: "expense", date: { $gte: prevStart, $lt: prevEnd } } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       BudgetModel.find({ userId: userObjectId, month: month || start.toISOString().slice(0, 7) }).lean(),
@@ -68,6 +79,19 @@ export const dashboardService = {
     const totalExpenses = expenseAgg[0]?.total || 0;
     const netSavings = totalIncome - totalExpenses;
 
+    const prevIncome = prevIncomeAgg[0]?.total || 0;
+    const prevExpenses = prevExpenseAgg[0]?.total || 0;
+    const prevNetSavings = prevIncome - prevExpenses;
+
+    const calcTrend = (current: number, previous: number) => {
+      if (previous === 0) return null;
+      return Math.round(((current - previous) / previous) * 100);
+    };
+
+    const incomeTrendPercent = calcTrend(totalIncome, prevIncome);
+    const expenseTrendPercent = calcTrend(totalExpenses, prevExpenses);
+    const netSavingsTrendPercent = calcTrend(netSavings, prevNetSavings);
+
     const totalBudget = budgets.reduce((sum, b) => sum + (b.limit || 0), 0);
     const budgetUsedPercent = totalBudget > 0 ? (totalExpenses / totalBudget) * 100 : 0;
 
@@ -76,6 +100,9 @@ export const dashboardService = {
       totalExpenses,
       netSavings,
       budgetUsedPercent: Math.round(budgetUsedPercent),
+      incomeTrendPercent,
+      expenseTrendPercent,
+      netSavingsTrendPercent,
     };
   },
 

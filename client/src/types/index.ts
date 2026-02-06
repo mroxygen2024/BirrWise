@@ -30,6 +30,9 @@ export interface DashboardSummary {
   totalExpenses: number;
   netSavings: number;
   budgetUsedPercent: number;
+  incomeTrendPercent: number | null;
+  expenseTrendPercent: number | null;
+  netSavingsTrendPercent: number | null;
 }
 
 export interface CategoryExpense {

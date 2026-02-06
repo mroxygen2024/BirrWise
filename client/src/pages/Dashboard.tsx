@@ -105,21 +105,21 @@ export default function Dashboard() {
             value={formatCurrency(summary.totalIncome)}
             icon={<DollarSign className="h-5 w-5" />}
             variant="income"
-            trend={{ value: 12, label: "vs last month" }}
+            trend={summary.incomeTrendPercent === null ? undefined : { value: summary.incomeTrendPercent, label: "vs last month" }}
           />
           <StatCard
             title="Total Expenses"
             value={formatCurrency(summary.totalExpenses)}
             icon={<TrendingDown className="h-5 w-5" />}
             variant="expense"
-            trend={{ value: -8, label: "vs last month" }}
+            trend={summary.expenseTrendPercent === null ? undefined : { value: summary.expenseTrendPercent, label: "vs last month" }}
           />
           <StatCard
             title="Net Savings"
             value={formatCurrency(summary.netSavings)}
             icon={<PiggyBank className="h-5 w-5" />}
             variant="savings"
-            trend={{ value: 23, label: "vs last month" }}
+            trend={summary.netSavingsTrendPercent === null ? undefined : { value: summary.netSavingsTrendPercent, label: "vs last month" }}
           />
           <StatCard
             title="Budget Status"
