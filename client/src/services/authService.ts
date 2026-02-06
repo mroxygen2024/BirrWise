@@ -33,22 +33,18 @@ export const authService = {
   },
 
   async refresh(): Promise<AuthResponse | null> {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
-    const response = await fetch(`${baseUrl}/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (response.status === 204) {
+    try {
+      const data = await apiClient.post<AuthResponse | undefined>(
+        '/auth/refresh',
+        undefined,
+        false,
+      );
+      if (!data) {
+        return null;
+      }
+      return normalizeAuthResponse(data);
+    } catch {
       return null;
     }
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = (await response.json()) as AuthResponse;
-    return normalizeAuthResponse(data);
   },
 };
