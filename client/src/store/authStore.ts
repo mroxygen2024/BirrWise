@@ -69,12 +69,12 @@ export const useAuthStore = create<AuthState>()((set, get) => {
 
     refresh: async () => {
       set({ isLoading: true });
-      try {
-        const result = await authService.refresh();
-        set({ user: result.user, accessToken: result.accessToken, isAuthenticated: true, isLoading: false });
-      } catch {
+      const result = await authService.refresh();
+      if (!result) {
         set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
+        return;
       }
+      set({ user: result.user, accessToken: result.accessToken, isAuthenticated: true, isLoading: false });
     },
 
     initialize: async () => {

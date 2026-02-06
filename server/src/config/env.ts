@@ -12,7 +12,7 @@ export const env = {
   jwtAudience: process.env.JWT_AUDIENCE || "savvy-finance-hub-client",
   refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET || "",
   refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
-  corsOrigin: process.env.CORS_ORIGIN || "http://localhost:5173",
+  corsOrigin: process.env.CORS_ORIGIN || "http://localhost:8080",
 };
 
 export const corsOrigins = env.corsOrigin

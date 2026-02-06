@@ -32,8 +32,19 @@ export const authService = {
     await apiClient.post('/auth/logout', undefined, false);
   },
 
-  async refresh(): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/refresh', undefined, false);
-    return normalizeAuthResponse(response);
+  async refresh(): Promise<AuthResponse | null> {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+    const response = await fetch(`${baseUrl}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = (await response.json()) as AuthResponse;
+    return normalizeAuthResponse(data);
   },
 };
