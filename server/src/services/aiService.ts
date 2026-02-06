@@ -39,7 +39,7 @@ function endOfMonth(date: Date) {
 }
 
 function formatAmount(amount: number) {
-  return `$${amount.toFixed(2)}`;
+  return `ETB ${amount.toFixed(2)}`;
 }
 
 async function buildUserContext(userId: string) {

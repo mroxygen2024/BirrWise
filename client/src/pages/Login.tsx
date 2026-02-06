@@ -64,7 +64,7 @@ export default function Login() {
               <Input
                 id="email"
                 type="email"
-                placeholder="demo@example.com"
+                placeholder="john@gmail.com"
                 {...register("email")}
                 onFocus={clearError}
               />
@@ -90,10 +90,6 @@ export default function Login() {
                 </p>
               )}
             </div>
-
-            <p className="text-xs text-muted-foreground">
-              Demo: demo@example.com / demo123
-            </p>
           </CardContent>
 
           <CardFooter className="flex flex-col gap-4">
