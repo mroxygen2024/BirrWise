@@ -13,8 +13,10 @@ export const env = {
   refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET || "",
   refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
   corsOrigin: process.env.CORS_ORIGIN || "http://localhost:8080",
+  aiEnabled: process.env.AI_ENABLED === "true",
+  googleApiKey: process.env.GOOGLE_API_KEY || "",
+  geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
 };
-
 export const corsOrigins = env.corsOrigin
   .split(",")
   .map((origin) => origin.trim())
@@ -30,4 +32,8 @@ if (!env.jwtSecret) {
 
 if (!env.refreshTokenSecret) {
   throw new Error("REFRESH_TOKEN_SECRET is required");
+}
+
+if (env.aiEnabled && !env.googleApiKey) {
+  throw new Error("GOOGLE_API_KEY is required when AI_ENABLED=true");
 }
