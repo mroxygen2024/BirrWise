@@ -10,7 +10,13 @@ type RequestOptions = {
   auth?: boolean;
 };
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+const envBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+if (!envBaseUrl && import.meta.env.PROD) {
+  throw new Error('VITE_API_BASE_URL is required in production builds');
+}
+
+const baseUrl = envBaseUrl || 'http://localhost:4000/api';
 
 async function request<T>({ method, path, body, auth = true }: RequestOptions): Promise<T> {
   const headers: Record<string, string> = {
@@ -33,6 +39,8 @@ async function request<T>({ method, path, body, auth = true }: RequestOptions): 
 
   if (!response.ok) {
     if (response.status === 401 && auth) {
+      // Explicit policy: any 401 after startup invalidates auth and logs the user out.
+      // Refresh-on-401 is intentionally not performed here.
       emitAuthInvalid();
     }
     const errorBody = await response.json().catch(() => ({ message: 'Request failed' }));
