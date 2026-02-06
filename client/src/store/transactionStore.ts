@@ -82,7 +82,12 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
     }));
 
     try {
-      await transactionService.update(id, data);
+      const updated = await transactionService.update(id, data);
+      set(state => ({
+        transactions: state.transactions.map(t =>
+          t.id === id ? updated : t
+        ),
+      }));
     } catch (err) {
       // Rollback on error
       set({ 
@@ -103,6 +108,8 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
     try {
       await transactionService.delete(id);
+      const transactions = await transactionService.getAll();
+      set({ transactions });
     } catch (err) {
       // Rollback on error
       set({ 
