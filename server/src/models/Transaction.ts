@@ -24,10 +24,8 @@ const transactionSchema = new Schema<TransactionDocument>(
     timestamps: { createdAt: true, updatedAt: false },
     toJSON: {
       transform: (_doc, ret) => {
-        ret.id = ret._id.toString();
-        delete ret._id;
-        delete ret.__v;
-        return ret;
+        const { _id, __v, ...rest } = ret;
+        return { id: _id.toString(), ...rest };
       },
     },
   },

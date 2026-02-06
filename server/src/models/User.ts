@@ -18,11 +18,8 @@ const userSchema = new Schema<UserDocument>(
     timestamps: { createdAt: true, updatedAt: false },
     toJSON: {
       transform: (_doc, ret) => {
-        ret.id = ret._id.toString();
-        delete ret._id;
-        delete ret.passwordHash;
-        delete ret.__v;
-        return ret;
+        const { _id, __v, passwordHash, ...rest } = ret;
+        return { id: _id.toString(), ...rest };
       },
     },
   },

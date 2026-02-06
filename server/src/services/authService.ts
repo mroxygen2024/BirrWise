@@ -37,21 +37,23 @@ function parseExpiresInToMs(expiresIn: string) {
 }
 
 function generateAccessToken(payload: TokenPayload) {
-  return jwt.sign(payload, env.jwtSecret, {
-    expiresIn: env.jwtExpiresIn,
+  const options: jwt.SignOptions = {
+    expiresIn: env.jwtExpiresIn as jwt.SignOptions["expiresIn"],
     issuer: env.jwtIssuer,
     audience: env.jwtAudience,
-  });
+  };
+  return jwt.sign(payload, env.jwtSecret, options);
 }
 
 async function generateRefreshToken(userId: string) {
   const tokenId = crypto.randomUUID();
-  const refreshToken = jwt.sign({ userId }, env.refreshTokenSecret, {
-    expiresIn: env.refreshTokenExpiresIn,
+  const options: jwt.SignOptions = {
+    expiresIn: env.refreshTokenExpiresIn as jwt.SignOptions["expiresIn"],
     issuer: env.jwtIssuer,
     audience: env.jwtAudience,
     jwtid: tokenId,
-  });
+  };
+  const refreshToken = jwt.sign({ userId }, env.refreshTokenSecret, options);
 
   const expiresAt = new Date(Date.now() + parseExpiresInToMs(env.refreshTokenExpiresIn));
   const tokenHash = hashToken(refreshToken);
@@ -86,7 +88,7 @@ export const authService = {
       passwordHash,
     });
 
-    const tokens = await issueTokens(user.id);
+    const tokens = await issueTokens(user._id.toString());
     return { user: user.toJSON(), ...tokens };
   },
 
@@ -101,7 +103,7 @@ export const authService = {
       throw new ApiError(401, "Invalid email or password");
     }
 
-    const tokens = await issueTokens(user.id);
+    const tokens = await issueTokens(user._id.toString());
     return { user: user.toJSON(), ...tokens };
   },
 
@@ -135,7 +137,7 @@ export const authService = {
       throw new ApiError(401, "Unauthenticated");
     }
 
-    const tokens = await issueTokens(user.id);
+    const tokens = await issueTokens(user._id.toString());
     return { user: user.toJSON(), ...tokens };
   },
 

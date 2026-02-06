@@ -21,10 +21,8 @@ const budgetSchema = new Schema<BudgetDocument>(
     timestamps: false,
     toJSON: {
       transform: (_doc, ret) => {
-        ret.id = ret._id.toString();
-        delete ret._id;
-        delete ret.__v;
-        return ret;
+        const { _id, __v, ...rest } = ret;
+        return { id: _id.toString(), ...rest };
       },
     },
   },
