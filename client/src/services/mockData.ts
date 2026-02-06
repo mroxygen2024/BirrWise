@@ -126,7 +126,7 @@ export const mockDailyExpenses: DailyExpense[] = [
 
 // AI mock responses
 export const mockAIResponses = [
-  "Based on your spending patterns, I notice you're spending 47% of your food budget on dining out. Consider meal prepping to save approximately $150/month.",
+  "Based on your spending patterns, I notice you're spending 47% of your food budget on dining out. Consider meal prepping to save approximately ETB 150/month.",
   "Great news! Your savings rate this month is 23%, which is above the recommended 20%. Keep up the good work!",
   "I've noticed your entertainment expenses are well under budget. You might consider reallocating some of that budget to your savings goals.",
   "Your transportation costs are very low this month. If you're working remotely, consider adjusting your budget to reflect this change.",

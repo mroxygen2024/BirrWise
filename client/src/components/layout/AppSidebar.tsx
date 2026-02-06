@@ -33,7 +33,7 @@ export function AppSidebar() {
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
             <TrendingUp className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-lg font-bold text-sidebar-foreground">FinanceAI</span>
+          <span className="text-lg font-bold text-sidebar-foreground">Birrwise</span>
         </div>
       </SidebarHeader>
 

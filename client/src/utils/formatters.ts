@@ -1,9 +1,9 @@
 import { format } from 'date-fns';
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-ET', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'ETB',
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);
