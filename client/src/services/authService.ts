@@ -40,6 +40,10 @@ export const authService = {
       headers: { 'Content-Type': 'application/json' },
     });
 
+    if (response.status === 204) {
+      return null;
+    }
+
     if (!response.ok) {
       return null;
     }

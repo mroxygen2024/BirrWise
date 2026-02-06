@@ -61,12 +61,14 @@ export const authController = {
     try {
       const token = getCookie(req, "refreshToken");
       if (!token) {
-        return res.status(401).json({ message: "Unauthenticated" });
+        clearRefreshCookie(res);
+        return res.status(204).send();
       }
       const result = await authService.refresh(token);
       setRefreshCookie(res, result.refreshToken, result.refreshExpiresAt);
       return res.status(200).json({ user: result.user, accessToken: result.accessToken });
     } catch (err) {
+      clearRefreshCookie(res);
       return next(err as Error);
     }
   },
