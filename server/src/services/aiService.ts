@@ -8,6 +8,21 @@ import { env } from "../config/env";
 
 const SYSTEM_PROMPT = `You are a financial assistant for a personal finance app.\n- Use the provided user data to answer.\n- Provide concise, actionable guidance.\n- Do not fabricate user data. If details are missing, ask a clarifying question.\n- Never provide legal or tax advice.`;
 
+const IDENTITY_RESPONSE =
+  "Hi! I’m Birrwise AI, your personal finance assistant. I’m here to help you understand your money, track budgets, and answer questions about your finances. Ask me anything like spending trends, budgets, or savings tips.";
+
+function isIdentityOrGreeting(message: string) {
+  const normalized = message.toLowerCase().trim();
+  return (
+    /^(hi|hello|hey|good\s*(morning|afternoon|evening))\b/.test(normalized) ||
+    /who\s+are\s+you\b/.test(normalized) ||
+    /what\s+is\s+your\s+name\b/.test(normalized) ||
+    /why\s+are\s+you\s+here\b/.test(normalized) ||
+    /what\s+do\s+you\s+do\b/.test(normalized) ||
+    /how\s+are\s+you\b/.test(normalized)
+  );
+}
+
 function buildPrompt(userMessage: string, context: string) {
   return {
     system: SYSTEM_PROMPT,
@@ -185,9 +200,14 @@ export const aiService = {
       timestamp: now,
     });
 
-    const context = await buildUserContext(userId);
-    const prompt = buildPrompt(message, context);
-    const assistantContent = await callGemini(prompt);
+    let assistantContent: string;
+    if (isIdentityOrGreeting(message)) {
+      assistantContent = IDENTITY_RESPONSE;
+    } else {
+      const context = await buildUserContext(userId);
+      const prompt = buildPrompt(message, context);
+      assistantContent = await callGemini(prompt);
+    }
 
     const assistantMessage = await AIMessageModel.create({
       userId,
