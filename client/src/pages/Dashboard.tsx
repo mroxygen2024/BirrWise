@@ -29,26 +29,50 @@ export default function Dashboard() {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [dailyExpenses, setDailyExpenses] = useState<DailyExpense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      const [summaryData, categoryData, monthlyDataRes, dailyData] =
-        await Promise.all([
-          dashboardService.getSummary(),
-          dashboardService.getCategoryExpenses(),
-          dashboardService.getMonthlyData(),
-          dashboardService.getDailyExpenses(),
-        ]);
-      setSummary(summaryData);
-      setCategoryExpenses(categoryData);
-      setMonthlyData(monthlyDataRes);
-      setDailyExpenses(dailyData);
-      setIsLoading(false);
+      setError(null);
+      try {
+        const [summaryData, categoryData, monthlyDataRes, dailyData] =
+          await Promise.all([
+            dashboardService.getSummary(),
+            dashboardService.getCategoryExpenses(),
+            dashboardService.getMonthlyData(),
+            dashboardService.getDailyExpenses(),
+          ]);
+        setSummary(summaryData);
+        setCategoryExpenses(categoryData);
+        setMonthlyData(monthlyDataRes);
+        setDailyExpenses(dailyData);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load dashboard data",
+        );
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchData();
   }, []);
+
+  if (error) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="text-center">
+            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-muted-foreground">
+              Please try again later.
+            </p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (isLoading || !summary) {
     return (

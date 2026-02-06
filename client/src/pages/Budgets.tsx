@@ -10,14 +10,21 @@ export default function Budgets() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBudgets = async () => {
       setIsLoading(true);
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      const data = await budgetService.getMonthlyBudgets(currentMonth);
-      setBudgets(data);
-      setIsLoading(false);
+      setError(null);
+      try {
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const data = await budgetService.getMonthlyBudgets(currentMonth);
+        setBudgets(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load budgets");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchBudgets();
@@ -43,7 +50,16 @@ export default function Budgets() {
           </p>
         </div>
 
-        {isLoading ? (
+        {error ? (
+          <div className="flex items-center justify-center h-48">
+            <div className="text-center">
+              <p className="text-sm text-destructive">{error}</p>
+              <p className="text-sm text-muted-foreground">
+                Please try again later.
+              </p>
+            </div>
+          </div>
+        ) : isLoading ? (
           <div className="flex items-center justify-center h-48">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
