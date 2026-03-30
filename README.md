@@ -1,5 +1,3 @@
-
-
 <p align="center">
 	<img src="client/public/favicon.svg" alt="BirrWise logo" width="56" height="56" />
 </p>
@@ -111,71 +109,85 @@ cd server && npm install
 cd ../client && npm install
 ```
 
-## Configuration
+## Dockerized Deployment
 
-Create local environment files from the checked-in examples before running the apps.
+BirrWise supports full Docker-based development and production workflows for maximum consistency and ease of onboarding.
+
+### Prerequisites
+- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
+- MongoDB Atlas account (or any remote MongoDB URI)
+
+### 1. Environment Setup
+
+Copy example environment files and fill in your secrets:
 
 ```bash
 cp server/.env.example server/.env
 cp client/.env.example client/.env
 ```
 
-If any credential was ever committed to git, treat it as compromised. Rotate it in the provider dashboard first, then update your local `.env` with the replacement value. Removing the file from the repo does not invalidate an exposed secret.
+- For **development**, set `VITE_API_BASE_URL=http://localhost:4000/api` in `client/.env`.
+- For **production**, set `VITE_API_BASE_URL=/api` in `client/.env` (or use a build-time override).
+- Set your MongoDB Atlas URI in `server/.env` as `MONGODB_URI`.
 
-### Backend (`server/.env`)
-
-```env
-PORT=4000
-MONGODB_URI=mongodb://localhost:27017/savvy_finance
-JWT_SECRET=replace_with_strong_secret
-JWT_EXPIRES_IN=1h
-JWT_ISSUER=savvy-finance-hub
-JWT_AUDIENCE=savvy-finance-hub-client
-REFRESH_TOKEN_SECRET=replace_with_refresh_secret
-REFRESH_TOKEN_EXPIRES_IN=7d
-CORS_ORIGIN=http://localhost:5173
-AI_ENABLED=false
-GOOGLE_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash
-```
-
-### Frontend (`client/.env`)
-
-```env
-VITE_API_BASE_URL=http://localhost:4000/api
-```
-
-### Secret Exposure Response
-
-If a secret was exposed in repository history:
-
-1. Rotate the credential at the provider immediately.
-2. Update your local `server/.env` with the new value.
-3. Remove tracked env files from git and commit that cleanup.
-4. Decide separately whether you also need a history rewrite for compliance.
+### 2. Development (Hot Reload)
 
 ```bash
-git rm --cached server/.env client/.env
-git commit -m "chore: stop tracking local env files"
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
+- Frontend: [http://localhost:5173](http://localhost:5173)
+- Backend: [http://localhost:4000](http://localhost:4000)
+
+### 3. Production (Optimized, Nginx)
+
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+```
+- Frontend: [http://localhost](http://localhost)
+- Backend: available at `/api` via nginx reverse proxy
+
+### 4. Stopping Containers
+
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml down
+# or for production
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+```
+
+### 5. Best Practices & Notes
+- **No local MongoDB container**: Use MongoDB Atlas for production-grade reliability.
+- **Secrets**: Never commit `.env` files. Rotate any credential if exposed.
+- **Alpine images & multi-stage builds**: Used for small, secure, and fast containers.
+- **Networking**: Docker service names are used for internal communication (never `localhost`).
+- **Frontend/Backend ports**: Dev: 5173 (client), 4000 (server). Prod: nginx serves frontend on 80, proxies `/api` to backend.
+- **Troubleshooting**: If you see permission errors, run `sudo chown -R $USER:$USER .` in the project root.
+
+### 6. MongoDB Atlas
+- Create a free cluster at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+- Whitelist your server's IP or use 0.0.0.0/0 for dev (not recommended for prod)
+- Copy the connection string to `server/.env` as `MONGODB_URI`
+
+---
 
 ## Running the Apps
 
-Run each app in its own terminal.
+> **Recommended:** Use Docker Compose as described above for a unified workflow.
+
+Or, to run manually:
 
 ### Backend
-
 ```bash
 cd server
 npm run dev
 ```
 
 ### Frontend
-
 ```bash
 cd client
 npm run dev
 ```
+
+---
 
 ## API Endpoints
 
