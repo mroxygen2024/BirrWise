@@ -113,7 +113,14 @@ cd ../client && npm install
 
 ## Configuration
 
-Create environment files before running the apps.
+Create local environment files from the checked-in examples before running the apps.
+
+```bash
+cp server/.env.example server/.env
+cp client/.env.example client/.env
+```
+
+If any credential was ever committed to git, treat it as compromised. Rotate it in the provider dashboard first, then update your local `.env` with the replacement value. Removing the file from the repo does not invalidate an exposed secret.
 
 ### Backend (`server/.env`)
 
@@ -136,6 +143,20 @@ GEMINI_MODEL=gemini-2.5-flash
 
 ```env
 VITE_API_BASE_URL=http://localhost:4000/api
+```
+
+### Secret Exposure Response
+
+If a secret was exposed in repository history:
+
+1. Rotate the credential at the provider immediately.
+2. Update your local `server/.env` with the new value.
+3. Remove tracked env files from git and commit that cleanup.
+4. Decide separately whether you also need a history rewrite for compliance.
+
+```bash
+git rm --cached server/.env client/.env
+git commit -m "chore: stop tracking local env files"
 ```
 
 ## Running the Apps
